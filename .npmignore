@@ -4,3 +4,4 @@ node_modules
 tests
 .git*
 .npmignore
+cache

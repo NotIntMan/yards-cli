@@ -11,11 +11,8 @@ var build=program
     .command('build [<path>]')
     .description('Building project.')
     .option('-v, --nw-version <ver>','Sets version of NW that will be used.')
-    .option('--win','Add Win32 to build platforms.')
-    .option('--osx','Add Mac OS X to build platforms.')
-    .option('--l32','Add Linux 32 bit to build platforms.')
-    .option('--l64','Add Linux 64 bit to build platforms.')
-    .option('','Default build platforms: win and osx.')
+    .option('-p, --platforms <platformlist>','Platforms for building.')
+    .option('','Must be: osx32,osx64,linux32,linux64,win32,win64.')
     .option('--aname','Sets name of your app.')
     .option('--aver','Sets version of your app.')
     .option('-b, --build-dir <dir>','Sets output directory for builded app.')
@@ -32,10 +29,7 @@ var build=program
         cli.build({
             path:path,
             version:build.nwVersion,
-            win:build.win,
-            osx:build.osx,
-            linux32:build.l32,
-            linux64:build.l64,
+            platforms:build.platforms,
             appName:build.aname,
             appVersion:build.aver,
             buildDir:build.buildDir,

@@ -1,9 +1,9 @@
 var template=require('./template.js');
-var fs=require('fs');
 var path=require('path');
 var yards=require('yards');
 var Promise=yards.API.PromiseMixin;
-var ChildProcess=require('child_process');
+var Builder=require('node-webkit-builder');
+var detectCurrentPlatform = require('./node_modules/node-webkit-builder/lib/detectCurrentPlatform.js');
 
 module.exports.yards=yards;
 
@@ -15,30 +15,20 @@ var o=function(def,decode) {
     };
 };
 
-var platforms=function(name,val,opts) {
-    if (val) {
-        if (!opts.platforms)
-            opts.platforms=[name];
-        else
-            opts.platforms.push(name);
-    };
-};
-
 var _options={
     path:o('./',function(name,val,opts) {
         opts.files=path.resolve(val,'**','**');
     }),
     version:o('latest'),
-    win:o(false,platforms),
-    osx:o(false,platforms),
-    linux32:o(false,platforms),
-    linux64:o(false,platforms),
+    platforms:o('',function(name,val,opts) {
+        opts.platforms=val.toString().split(',');
+    }),
     appName:o(false),
     appVersion:o(false),
     buildDir:o('./build',function(name,val,opts) {
         opts.buildDir=path.resolve(val);
     }),
-    cacheDir:o('./cache',function(name,val,opts) {
+    cacheDir:o(path.resolve(__dirname,'cache'),function(name,val,opts) {
         opts.cacheDir=path.resolve(val);
     }),
     buildType:o('default'),
@@ -61,7 +51,6 @@ var _options={
 };
 
 module.exports.build=function(options) {
-    var Builder=require('./node-webkit-builder');
     var opts={};
     for (var i in _options) {
         var val;
@@ -72,6 +61,7 @@ module.exports.build=function(options) {
         _options[i].decode(i,val,opts);
     };
     var builder=new Builder(opts);
+    builder.on('log',  console.log);
     return builder.build();
 };
 
@@ -93,22 +83,14 @@ module.exports.newProject=function(options) {
         _projOptions[i].decode(i,val,opts);
     };
     var y=new template('');
-    y.readFromDir(path.resolve(__dirname,'node_modules','yards'));
-    var mkdir=Promise.denodeify(fs.mkdir);
-    return mkdir(path.resolve(opts.path)).then(function() {
-        return mkdir(path.resolve(opts.path,'node_modules'));
-    }).then(null,function(){}).then(function() {
-        return y.writeToDir(path.resolve(opts.path,'node_modules','yards'));
-    }).then(function() {
-        var arr=[
-            opts.template,
-            path.resolve(__dirname,'templates',opts.template+'.bin')
-        ].map(function(p) {
-            var t=new template(p);
-            return t.promise();
-        });
-        return Promise.all(arr);
-    }).then(function(arr) {
+    var arr=[
+        opts.template,
+        path.resolve(__dirname,'templates',opts.template+'.bin')
+    ].map(function(p) {
+        var t=new template(p);
+        return t.promise();
+    });
+    return Promise.all(arr).then(function(arr) {
         for (var i=0; i<arr.length; i++)
             if (arr[i].$fileExists) {
                 console.log('Using template',path.relative(path.resolve(arr[i].filename,'..'),arr[i].filename));
@@ -145,7 +127,7 @@ module.exports.newTemplate=function(options) {
 
 var _runOptions={
     path:o('./',function(name,val,opts) {
-        opts.path=path.resolve(val);
+        opts.files=path.resolve(val,'**');
     })
 };
 
@@ -160,8 +142,11 @@ module.exports.run=function(options) {
         _runOptions[i].decode(i,val,opts);
     };
 
-    var nodewebkit=require('nodewebkit');
-    var exebin=nodewebkit.findpath();
-    var exec=Promise.denodeify(ChildProcess.exec);
-    return exec(exebin+' "'+opts.path+'"');
+    var currentPlatform = detectCurrentPlatform();
+    opts.platforms=[currentPlatform];
+    opts.currentPlatform=currentPlatform;
+    opts.cacheDir=path.resolve(__dirname,'cache');
+    var builder=new Builder(opts);
+    builder.on('log',  console.log);
+    return builder.run();
 };

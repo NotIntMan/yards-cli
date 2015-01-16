@@ -1,3 +1,4 @@
 *.db
 *.sublime*
 node_modules
+cache
