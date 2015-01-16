@@ -1,0 +1,43 @@
+{
+    "name": "yards-cli",
+    "version": "0.1.1",
+    "description": "Command-line interface for yet another rapid development solution",
+    "bugs": "shepardiwe@gmail.com",
+    "homepage": "https://nim-pro.github.io/",
+    "license": "MIT",
+    "author": {
+        "name": "Dmirty Dyomin",
+        "email": "shepardiwe@gmail.com",
+        "url": "https://nim-pro.github.io/"
+    },
+    "dependencies": {
+        "commander": "2.3.0",
+        "yards": "0.1.1",
+        "nodewebkit": "0.10.5",
+
+
+        "archiver": "^0.10.0",
+        "bluebird": "~1.2.2",
+        "decompress-zip": "0.0.8",
+        "fs-extra": "^0.10.0",
+        "inherits": "~2.0.1",
+        "lodash": "~2.4.1",
+        "ncp": "^0.6.0",
+        "optimist": "^0.6.1",
+        "rcedit": "0.2.0",
+        "plist": "^1.0.0",
+        "progress": "~1.1.7",
+        "request": "~2.40.0",
+        "rimraf": "^2.2.8",
+        "semver": "^2.3.1",
+        "simple-glob": "~0.1.0",
+        "tar-fs": "^0.3.2",
+        "temp": "~0.7.0",
+        "update-notifier": "^0.1.8",
+        "winresourcer": "^0.9.0"
+    },
+    "bin": {
+        "yards": "./yards.js"
+    },
+    "main": "yards-cli.js"
+}

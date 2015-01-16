@@ -1,0 +1,6 @@
+*.db
+*.sublime*
+node_modules
+tests
+.git*
+.npmignore
