@@ -61,7 +61,12 @@ module.exports.build=function(options) {
         _options[i].decode(i,val,opts);
     };
     var builder=new Builder(opts);
-    builder.on('log',  console.log);
+    builder.on('log', console.log);
+    var fn;
+    builder.on('stdout', fn=function(data) {
+        console.log(data.toString('utf-8'));
+    });
+    builder.on('stderr', fn);
     return builder.build();
 };
 
@@ -146,7 +151,13 @@ module.exports.run=function(options) {
     opts.platforms=[currentPlatform];
     opts.currentPlatform=currentPlatform;
     opts.cacheDir=path.resolve(__dirname,'cache');
+    console.log(opts);
     var builder=new Builder(opts);
-    builder.on('log',  console.log);
+    builder.on('log', console.log);
+    var fn;
+    builder.on('stdout', fn=function(data) {
+        console.log(data.toString('utf-8'));
+    });
+    builder.on('stderr', fn);
     return builder.run();
 };
