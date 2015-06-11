@@ -2,10 +2,14 @@ var template=require('./template.js');
 var path=require('path');
 var yards=require('yards');
 var Promise=yards.API.PromiseMixin;
+var File=yards.API.File;
 var Builder=require('node-webkit-builder');
 var detectCurrentPlatform = require('./node_modules/node-webkit-builder/lib/detectCurrentPlatform.js');
+var prompt=require('prompt');
+var formatJSON=require('format-json');
 
 module.exports.yards=yards;
+module.exports.currentPlatform=detectCurrentPlatform();
 
 var _asIs=function(name,val,opts) {opts[name]=val};
 var o=function(def,decode) {
@@ -19,7 +23,7 @@ var _options={
     path:o('./',function(name,val,opts) {
         opts.files=path.resolve(val,'**','**');
     }),
-    version:o('latest'),
+    version:o('unknown'),
     platforms:o('',function(name,val,opts) {
         opts.platforms=val.toString().split(',');
     }),
@@ -60,6 +64,12 @@ module.exports.build=function(options) {
             val=_options[i].def;
         _options[i].decode(i,val,opts);
     };
+    if (opts.version==='unknown')
+        try {
+            opts.version=require(path.resolve(options.path,'package.json')).nwversion;
+        } catch(e) {
+            opts.version='latest';
+        };
     var builder=new Builder(opts);
     builder.on('log', console.log);
     var fn;
@@ -102,7 +112,87 @@ module.exports.newProject=function(options) {
                 arr[i].read();
                 return arr[i].writeToDir(opts.path);
             };
-    });
+    }).then(function() {
+        prompt.message='YARDS';
+        prompt.start();
+        return new Promise(function(resolve,reject) {
+            prompt.get([
+                {
+                    name:'name',
+                    description:'App name',
+                    type:'string',
+                    required:true,
+                    default:path.relative(path.resolve(opts.path,'..'),opts.path)
+                },
+                {
+                    name:'main',
+                    description:'Main page file',
+                    type:'string',
+                    required:true,
+                    default:'index.html'
+                },
+                {
+                    name:'version',
+                    description:'App version',
+                    type:'string',
+                    required:true,
+                    default:'0.0.0',
+                    conform:function(a) {
+                        var t=a.split('.');
+                        return (t.length>=3)&&(t.every(function (a) {return a.length}));
+                    }
+                },
+                {
+                    name:'nwversion',
+                    description:'NW.js version',
+                    type:'string',
+                    required:true,
+                    default:'latest',
+                    conform:function(a) {
+                        if (a.trim()==='latest') return true;
+                        var t=a.split('.');
+                        return (t.length>=3)&&(t.slice(0,3).every(function (a) {return a.length}));
+                    }
+                },
+                {
+                    name:'description',
+                    description:'App description',
+                    type:'string'
+                },
+                {
+                    name:'keywords',
+                    description:'Keywords',
+                    type:'string',
+                    before:function(v) {
+                        return v.split(' ')
+                        .map(function(a){return a.trim()})
+                        .filter(function(a){return a.length});
+                    }
+                },
+                {
+                    name:'license',
+                    description:'License',
+                    type:'string',
+                    default:'MIT'
+                },
+                {
+                    name:'author',
+                    description:'Author',
+                    type:'string',
+                    before:function(v) {
+                        return {name:v};
+                    }
+                }
+            ],function(err,res) {
+                if (err) return reject(err);
+                resolve(res);
+            });
+        });
+    }).then(function(res) {
+        var f=new File(path.resolve(opts.path,'package.json'));
+        f.data=formatJSON.plain(res);
+        return f.write('utf-8');
+    })
 };
 
 var _templateOptions={
@@ -133,11 +223,12 @@ module.exports.newTemplate=function(options) {
 var _runOptions={
     path:o('./',function(name,val,opts) {
         opts.files=path.resolve(val,'**');
+        opts.$c+=1;
     })
 };
 
 module.exports.run=function(options) {
-    var opts={};
+    var opts={$c:0};
     for (var i in _runOptions) {
         var val;
         if (!!options[i])
@@ -146,14 +237,20 @@ module.exports.run=function(options) {
             val=_runOptions[i].def;
         _runOptions[i].decode(i,val,opts);
     };
-
+    process.argv.splice(2,1+opts.$c);
     var currentPlatform = detectCurrentPlatform();
     opts.platforms=[currentPlatform];
     opts.currentPlatform=currentPlatform;
     opts.cacheDir=path.resolve(__dirname,'cache');
-    console.log(opts);
+    try {
+        opts.version=require(path.resolve(opts.files,'../package.json')).nwversion;
+    } catch(e) {
+        opts.version='latest';
+    }
     var builder=new Builder(opts);
-    builder.on('log', console.log);
+    builder.on('log', function(data) {
+        console.log(data);
+    });
     var fn;
     builder.on('stdout', fn=function(data) {
         console.log(data.toString('utf-8'));

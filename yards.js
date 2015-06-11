@@ -60,15 +60,17 @@ var newTemplate=program
     });
 
 var newProject=program
-    .command('project [<path>]')
-    .description('Creating new project.')
+    .command('init [<path>]')
+    .description('Init new project.')
     .option('-t, --template <filename>','Use default or custom template.')
     .action(function(path) {
         cli.newProject({
             path:path,
             template:newProject.template
         }).then(function() {
-            console.log('Project is created.')
+            console.log('Project is initialized.')
+        },function(e) {
+            console.log(e.stack||e);
         });
     });
 
@@ -79,8 +81,6 @@ var run=program
         console.log('Running project as application...');
         cli.run({
             path:path
-        }).then(function(val) {
-            console.log('Application closed.');
         });
     });
 
